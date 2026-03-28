@@ -1,19 +1,22 @@
 package db
 
 import (
-	"context"
+	"database/sql"
 	"fmt"
 	"log"
 
-	"github.com/jackc/pgx/v5"
+	_ "github.com/lib/pq"
 )
 
-func ConnectDB() *pgx.Conn {
-	connection, err := pgx.Connect(context.Background(), "postgres://anshal:strongpassword@192.168.1.12:5432/passwordStorage")
+func ConnectDB(DBUri string) *sql.DB {
+	connection, err := sql.Open("postgres", DBUri)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println("Database connected")
+	err = connection.Ping()
+	if err != nil {
+		fmt.Println(err)
+		return connection
+	}
 	return connection
 }
