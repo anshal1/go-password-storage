@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	mp "github.com/anshal1/migrations-package/utils"
 	"github.com/anshal1/passwordStorage/src/db"
 	userModel "github.com/anshal1/passwordStorage/src/models/user"
 	userRepo "github.com/anshal1/passwordStorage/src/repo/user"
 	userService "github.com/anshal1/passwordStorage/src/services/user"
+	"github.com/joho/godotenv"
 )
 
 type Temp struct {
@@ -25,9 +27,13 @@ func (t *Temp) UpdateUser(user userModel.User) error {
 }
 
 func main() {
+	err := godotenv.Load() // loads ".env" by default
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	config := mp.GetConfig()
-	dburi := "postgres://anshal:strongpassword@192.168.1.12:5432/passwordStorage"
-	err := mp.CreateMigrations(config, dburi)
+	dburi := os.Getenv("DB")
+	err = mp.CreateMigrations(config, dburi)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -40,6 +46,7 @@ func main() {
 	newUserService := userService.NewUserService(newUserRepo)
 
 	http.HandleFunc("/user", newUserService.UserHandler)
+	http.HandleFunc("/user/login", newUserService.HandleLogin)
 	err = http.ListenAndServe(":9999", nil)
 	if err != nil {
 		fmt.Println(err)

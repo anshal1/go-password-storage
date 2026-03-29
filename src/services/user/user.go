@@ -10,7 +10,7 @@ import (
 
 type UserRepoInterface interface {
 	AddUser(user userModel.User) error
-	UpdateUser(user userModel.User) error
+	Login(user userModel.User) error
 }
 
 type UserService struct {
@@ -45,11 +45,50 @@ func (u *UserService) UserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := u.userRepo.AddUser(user); err != nil {
-		utils.WriteError(w, userModel.ErrInternalServer)
+		utils.WriteError(w, &utils.APIError{Message: err.Error(), Code: 400})
 		return
 	}
+	jwtToken, err := utils.GenerateJWT(user.Username)
+	if err != nil {
+		utils.WriteError(w, &utils.APIError{Message: err.Error(), Code: 500})
+		return
+	}
+	utils.SetAuthCookie(w, jwtToken)
 	utils.WriteJSON(w, http.StatusCreated, map[string]string{
 		"message":  "user created successfully",
 		"username": user.Username,
+	})
+}
+
+func (u *UserService) HandleLogin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		utils.WriteError(w, userModel.ErrMethodNotAllowed)
+		return
+	}
+
+	var creds userModel.User
+	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
+		utils.WriteError(w, userModel.ErrInvalidJSON)
+		return
+	}
+	defer r.Body.Close()
+
+	if creds.Username == "" || creds.Password == "" {
+		utils.WriteError(w, userModel.ErrMissingFields)
+		return
+	}
+	err := u.userRepo.Login(creds)
+	if err != nil {
+		utils.WriteError(w, &utils.APIError{Message: err.Error(), Code: 400})
+		return
+	}
+	jwt, err := utils.GenerateJWT(creds.Username)
+	if err != nil {
+		utils.WriteError(w, &utils.APIError{Message: err.Error(), Code: 500})
+		return
+	}
+	utils.SetAuthCookie(w, jwt)
+	utils.WriteJSON(w, 200, map[string]any{
+		"message": "Login successfull",
 	})
 }

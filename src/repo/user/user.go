@@ -54,6 +54,18 @@ func (u *UserRepo) AddUser(user userModel.User) error {
 	return nil
 }
 
-func (u *UserRepo) UpdateUser(user userModel.User) error {
+func (u *UserRepo) Login(user userModel.User) error {
+	var password string
+	err := u.DB.QueryRow("select password from users where username = $1", user.Username).Scan(&password)
+	if err != nil {
+		return err
+	}
+	if password == "" {
+		return errors.New(userModel.ErrUserNotFound.Message)
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(password), []byte(user.Password))
+	if err != nil {
+		return errors.New("Invalid username or password")
+	}
 	return nil
 }

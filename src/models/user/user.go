@@ -13,6 +13,7 @@ var (
 	ErrMethodNotAllowed = &utils.APIError{Message: "method not allowed", Code: http.StatusMethodNotAllowed}
 	ErrInvalidJSON      = &utils.APIError{Message: "invalid JSON body", Code: http.StatusBadRequest}
 	ErrWeakPassword     = &utils.APIError{Message: "password must be at least 8 characters", Code: http.StatusBadRequest}
+	ErrUserNotFound     = &utils.APIError{Message: "user not found", Code: http.StatusNotFound}
 )
 
 type User struct {
