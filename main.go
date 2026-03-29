@@ -8,23 +8,10 @@ import (
 
 	mp "github.com/anshal1/migrations-package/utils"
 	"github.com/anshal1/passwordStorage/src/db"
-	userModel "github.com/anshal1/passwordStorage/src/models/user"
 	userRepo "github.com/anshal1/passwordStorage/src/repo/user"
 	userService "github.com/anshal1/passwordStorage/src/services/user"
 	"github.com/joho/godotenv"
 )
-
-type Temp struct {
-	Name string
-}
-
-func (t *Temp) AddUser(user userModel.User) error {
-	return nil
-}
-
-func (t *Temp) UpdateUser(user userModel.User) error {
-	return nil
-}
 
 func main() {
 	err := godotenv.Load() // loads ".env" by default
