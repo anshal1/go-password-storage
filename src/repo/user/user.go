@@ -6,6 +6,7 @@ import (
 	"log"
 
 	userModel "github.com/anshal1/passwordStorage/src/models/user"
+	"github.com/anshal1/passwordStorage/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -68,4 +69,21 @@ func (u *UserRepo) Login(user userModel.User) error {
 		return errors.New("Invalid username or password")
 	}
 	return nil
+}
+
+func GetCurrentUser(db *sql.DB, jwtToken string) (userModel.UserDB, error) {
+	var user userModel.UserDB
+	userName, dbErr := utils.VerifyJWT(jwtToken)
+	if dbErr != nil {
+		return user, errors.New(dbErr.Error())
+	}
+	err := db.QueryRow("select id, username, password from users where username = $1", userName).Scan(&user.Id, &user.Username, &user.Password)
+	if errors.Is(err, sql.ErrNoRows) {
+		return user, errors.New(utils.UserNotFound)
+	}
+	if err != nil {
+		return user, err
+	}
+
+	return user, nil
 }

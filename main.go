@@ -8,7 +8,9 @@ import (
 
 	mp "github.com/anshal1/migrations-package/utils"
 	"github.com/anshal1/passwordStorage/src/db"
+	passwordRepo "github.com/anshal1/passwordStorage/src/repo/password"
 	userRepo "github.com/anshal1/passwordStorage/src/repo/user"
+	passwordService "github.com/anshal1/passwordStorage/src/services/password"
 	userService "github.com/anshal1/passwordStorage/src/services/user"
 	"github.com/joho/godotenv"
 )
@@ -32,8 +34,12 @@ func main() {
 	newUserRepo := userRepo.NewUserRepo(db)
 	newUserService := userService.NewUserService(newUserRepo)
 
+	newPasswordRepo := passwordRepo.NewPasswordRepo(db)
+	newPasswordService := passwordService.NewPasswordService(newPasswordRepo)
+
 	http.HandleFunc("/user", newUserService.UserHandler)
 	http.HandleFunc("/user/login", newUserService.HandleLogin)
+	http.HandleFunc("/save-password", newPasswordService.SavePasswordHandler)
 	err = http.ListenAndServe(":9999", nil)
 	if err != nil {
 		fmt.Println(err)

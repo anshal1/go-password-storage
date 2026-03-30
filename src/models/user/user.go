@@ -16,6 +16,12 @@ var (
 	ErrUserNotFound     = &utils.APIError{Message: "user not found", Code: http.StatusNotFound}
 )
 
+type UserDB struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Id       int64  `json:"id"`
+}
+
 type User struct {
 	Username string `json:"username"`
 	Password string `json:"password"`

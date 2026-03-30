@@ -15,11 +15,20 @@ type Claims struct {
 	Username string `json:"username"`
 	jwt.RegisteredClaims
 }
+type PasswordClaims struct {
+	Password string `json:"password"`
+	jwt.RegisteredClaims
+}
 
 type APIError struct {
 	Message string `json:"error"`
 	Code    int    `json:"code"`
 }
+
+var (
+	LoginError   = "please login to continue"
+	UserNotFound = "user not found"
+)
 
 func (e *APIError) Error() string { return e.Message }
 
@@ -54,6 +63,23 @@ func GenerateJWT(username string) (string, error) {
 	return token.SignedString(secret)
 }
 
+func GeneratePasswordHash(password string, secret string) (string, error) {
+	if len(secret) == 0 {
+		return "", errors.New("JWT_SECRET env var is not set")
+	}
+
+	claims := PasswordClaims{
+		Password: password,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:  password,
+			IssuedAt: jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(secret))
+}
+
 func SetAuthCookie(w http.ResponseWriter, token string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
@@ -64,4 +90,42 @@ func SetAuthCookie(w http.ResponseWriter, token string) {
 		SameSite: http.SameSiteStrictMode, // CSRF protection
 		MaxAge:   int((24 * time.Hour).Seconds()),
 	})
+}
+
+var (
+	ErrInvalidToken  = &APIError{Message: "invalid or malformed token", Code: 401}
+	ErrExpiredToken  = &APIError{Message: "token has expired", Code: 401}
+	ErrMissingSecret = errors.New("JWT_SECRET env var is not set")
+)
+
+func VerifyJWT(tokenString string) (string, *APIError) {
+	secret := []byte(os.Getenv("JWT_SECRET"))
+	if len(secret) == 0 {
+		return "", &APIError{Message: ErrMissingSecret.Error(), Code: 500}
+	}
+
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		&Claims{},
+		func(t *jwt.Token) (any, error) {
+			// Reject any token not signed with HMAC — prevents the "alg:none" attack
+			if t.Method != jwt.SigningMethodHS256 {
+				return "", ErrInvalidToken
+			}
+			return secret, nil
+		},
+	)
+	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return "", ErrExpiredToken
+		}
+		return "", ErrInvalidToken
+	}
+
+	claims, ok := token.Claims.(*Claims)
+	if !ok || !token.Valid || claims.Username == "" {
+		return "", ErrInvalidToken
+	}
+
+	return claims.Username, nil
 }
