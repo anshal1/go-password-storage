@@ -94,3 +94,22 @@ func (p *PasswordRepo) GetAllPasswords(page int, limit int, jwtToken string) ([]
 	}
 	return passwords, nil
 }
+
+func (p *PasswordRepo) DeletePassword(id int64, jwtToken string) error {
+	user, err := userRepo.GetCurrentUser(p.DB, jwtToken)
+	if err != nil {
+		return err
+	}
+	var passwordExitst bool
+	err = p.DB.QueryRow("select exists(select 1 from passwords where id = $1 and userId = $2)", id, user.Id).Scan(&passwordExitst)
+	if err != nil {
+		return err
+	}
+	if !passwordExitst {
+		return errors.New("password not found")
+	}
+
+	_, err = p.DB.Exec("delete from passwords where id = $1 and userId = $2", id, user.Id)
+	fmt.Println(err)
+	return err
+}

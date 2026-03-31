@@ -13,6 +13,7 @@ type PasswordServiceContract interface {
 	SavePassword(password passwordsModel.Password, jwtToken string) error
 	GetPassword(domain string, jwtToken string, secret string) (string, error)
 	GetAllPasswords(page int, limit int, jwtToken string) ([]passwordsModel.AllPasswordsResponse, error)
+	DeletePassword(id int64, jwtToken string) error
 }
 
 type PasswordService struct {
@@ -113,4 +114,27 @@ func (p *PasswordService) GetAllPasswordsHandler(w http.ResponseWriter, r *http.
 		return
 	}
 	utils.WriteJSON(w, 200, passwords)
+}
+
+func (p *PasswordService) DeletePasswordHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		utils.WriteError(w, &utils.APIError{Message: "method not allowed", Code: 405})
+		return
+	}
+	cookie, err := r.Cookie("access_token")
+	if err != nil {
+		utils.WriteError(w, &utils.APIError{Message: utils.UserNotFound, Code: 404})
+		return
+	}
+	id := r.URL.Query().Get("id")
+	idInt, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		utils.WriteError(w, &utils.APIError{Message: "invalid password id", Code: 400})
+		return
+	}
+	if err := p.passwordRepo.DeletePassword(idInt, cookie.Value); err != nil {
+		utils.WriteError(w, &utils.APIError{Message: err.Error(), Code: 500})
+		return
+	}
+	utils.WriteJSON(w, 200, map[string]any{"message": "password deleted successfully"})
 }

@@ -43,6 +43,7 @@ func main() {
 	http.HandleFunc("/save-password", utils.Log(newPasswordService.SavePasswordHandler))
 	http.HandleFunc("/get-password", utils.Log(newPasswordService.GetPasswordHandler))
 	http.HandleFunc("/getall-password", utils.Log(newPasswordService.GetAllPasswordsHandler))
+	http.HandleFunc("/delete-password", utils.Log(newPasswordService.DeletePasswordHandler))
 	err = http.ListenAndServe(":9999", nil)
 	if err != nil {
 		fmt.Println(err)
