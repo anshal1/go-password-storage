@@ -2,7 +2,6 @@ package passwordService
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	passwordsModel "github.com/anshal1/passwordStorage/src/models/passwords"
@@ -44,7 +43,6 @@ func (p *PasswordService) SavePasswordHandler(w http.ResponseWriter, r *http.Req
 		utils.WriteError(w, &utils.APIError{Message: utils.UserNotFound, Code: 404})
 		return
 	}
-	fmt.Println("Able to run")
 	err = p.passwordRepo.SavePassword(password, cookie.Value)
 	if err != nil {
 

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -30,10 +31,26 @@ var (
 	UserNotFound = "user not found"
 )
 
+const (
+	Reset  = "\033[0m"
+	Red    = "\033[31m"
+	Green  = "\033[32m"
+	Yellow = "\033[33m"
+	Blue   = "\033[34m"
+	Purple = "\033[35m"
+	Cyan   = "\033[36m"
+	White  = "\033[37m"
+
+	BoldRed    = "\033[1;31m"
+	BoldGreen  = "\033[1;32m"
+	BoldYellow = "\033[1;33m"
+)
+
 func (e *APIError) Error() string { return e.Message }
 
 func WriteJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("status", strconv.Itoa(status))
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		log.Printf("writeJSON encode error: %v", err)
@@ -128,4 +145,28 @@ func VerifyJWT(tokenString string) (string, *APIError) {
 	}
 
 	return claims.Username, nil
+}
+
+func PrintColoredLog(logText string, color string) {
+	log.Print(color + logText + Reset)
+}
+
+func Log(fn http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+		fn(w, r)
+		status := w.Header().Get("status")
+		statusInt, err := strconv.Atoi(status)
+		logText := path + " - Status: " + status
+		if err != nil {
+			PrintColoredLog(logText, Yellow)
+			return
+		}
+		if statusInt < 400 {
+			PrintColoredLog(logText, Green)
+			return
+		}
+		PrintColoredLog(logText, Red)
+
+	}
 }

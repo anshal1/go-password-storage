@@ -58,6 +58,9 @@ func (u *UserRepo) AddUser(user userModel.User) error {
 func (u *UserRepo) Login(user userModel.User) error {
 	var password string
 	err := u.DB.QueryRow("select password from users where username = $1", user.Username).Scan(&password)
+	if errors.Is(err, sql.ErrNoRows) {
+		return errors.New("user not found")
+	}
 	if err != nil {
 		return err
 	}
