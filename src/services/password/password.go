@@ -10,6 +10,7 @@ import (
 
 type PasswordServiceContract interface {
 	SavePassword(password passwordsModel.Password, jwtToken string) error
+	GetPassword(domain string, jwtToken string, secret string) (string, error)
 }
 
 type PasswordService struct {
@@ -50,4 +51,36 @@ func (p *PasswordService) SavePasswordHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 	utils.WriteJSON(w, 201, map[string]any{"message": "password saved successfully"})
+}
+
+func (p *PasswordService) GetPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		utils.WriteError(w, &utils.APIError{Message: "method not allowed", Code: 405})
+		return
+	}
+	var password struct {
+		Domain string `json:"domain"`
+		Secret string `json:"secret"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&password); err != nil {
+		utils.WriteError(w, passwordsModel.ErrInvalidJSON)
+		return
+	}
+	defer r.Body.Close()
+
+	if password.Domain == "" || password.Secret == "" {
+		utils.WriteError(w, passwordsModel.ErrMissingPasswordFields)
+		return
+	}
+	cookie, err := r.Cookie("access_token")
+	if err != nil {
+		utils.WriteError(w, &utils.APIError{Message: utils.UserNotFound, Code: 404})
+		return
+	}
+	plainPassword, err := p.passwordRepo.GetPassword(password.Domain, cookie.Value, password.Secret)
+	if err != nil {
+		utils.WriteError(w, &utils.APIError{Message: err.Error(), Code: 500})
+		return
+	}
+	utils.WriteJSON(w, 200, map[string]any{"message": "password retrieved successfully", "password": plainPassword})
 }

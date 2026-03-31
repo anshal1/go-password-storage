@@ -76,6 +76,9 @@ func (u *UserRepo) Login(user userModel.User) error {
 
 func GetCurrentUser(db *sql.DB, jwtToken string) (userModel.UserDB, error) {
 	var user userModel.UserDB
+	if len(jwtToken) <= 0 {
+		return user, errors.New(utils.LoginError)
+	}
 	userName, dbErr := utils.VerifyJWT(jwtToken)
 	if dbErr != nil {
 		return user, errors.New(dbErr.Error())
@@ -86,6 +89,10 @@ func GetCurrentUser(db *sql.DB, jwtToken string) (userModel.UserDB, error) {
 	}
 	if err != nil {
 		return user, err
+	}
+
+	if user == (userModel.UserDB{}) {
+		return user, errors.New(utils.UserNotFound)
 	}
 
 	return user, nil

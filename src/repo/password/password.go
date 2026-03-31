@@ -49,3 +49,22 @@ func (p *PasswordRepo) SavePassword(password passwordsModel.Password, jwtToken s
 	}
 	return nil
 }
+func (p *PasswordRepo) GetPassword(domain string, jwtToken string, secret string) (string, error) {
+	user, err := userRepo.GetCurrentUser(p.DB, jwtToken)
+	if err != nil {
+		return "", err
+	}
+	var passwordHash string
+	err = p.DB.QueryRow("select password from passwords where domain = $1 and userId = $2", domain, user.Id).Scan(&passwordHash)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", errors.New("password not found")
+	}
+	if err != nil {
+		return "", err
+	}
+	password, apiErr := utils.VerifyPasswordAndGetPassword(passwordHash, []byte(secret))
+	if apiErr != nil {
+		return "", errors.New(apiErr.Message)
+	}
+	return password, nil
+}

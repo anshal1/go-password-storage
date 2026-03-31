@@ -147,6 +147,35 @@ func VerifyJWT(tokenString string) (string, *APIError) {
 	return claims.Username, nil
 }
 
+func VerifyPasswordAndGetPassword(passwordHash string, secret []byte) (string, *APIError) {
+
+	if len(secret) == 0 {
+		return "", &APIError{Message: ErrMissingSecret.Error(), Code: 500}
+	}
+
+	token, err := jwt.ParseWithClaims(
+		passwordHash,
+		&PasswordClaims{},
+		func(t *jwt.Token) (any, error) {
+			// Reject any token not signed with HMAC — prevents the "alg:none" attack
+			if t.Method != jwt.SigningMethodHS256 {
+				return "", ErrInvalidToken
+			}
+			return secret, nil
+		},
+	)
+	if err != nil {
+		return "", ErrInvalidToken
+	}
+
+	claims, ok := token.Claims.(*PasswordClaims)
+	if !ok || !token.Valid || claims.Password == "" {
+		return "", ErrInvalidToken
+	}
+
+	return claims.Password, nil
+}
+
 func PrintColoredLog(logText string, color string) {
 	log.Print(color + logText + Reset)
 }
@@ -159,14 +188,14 @@ func Log(fn http.HandlerFunc) http.HandlerFunc {
 		statusInt, err := strconv.Atoi(status)
 		logText := path + " - Status: " + status
 		if err != nil {
-			PrintColoredLog(logText, Yellow)
+			PrintColoredLog("[ERROR] "+logText, Yellow)
 			return
 		}
 		if statusInt < 400 {
-			PrintColoredLog(logText, Green)
+			PrintColoredLog("[INFO] "+logText, Green)
 			return
 		}
-		PrintColoredLog(logText, Red)
+		PrintColoredLog("[ERROR] "+logText, Red)
 
 	}
 }

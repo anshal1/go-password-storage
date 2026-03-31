@@ -41,6 +41,7 @@ func main() {
 	http.HandleFunc("/user", utils.Log(newUserService.UserHandler))
 	http.HandleFunc("/user/login", utils.Log(newUserService.HandleLogin))
 	http.HandleFunc("/save-password", utils.Log(newPasswordService.SavePasswordHandler))
+	http.HandleFunc("/get-password", utils.Log(newPasswordService.GetPasswordHandler))
 	err = http.ListenAndServe(":9999", nil)
 	if err != nil {
 		fmt.Println(err)
