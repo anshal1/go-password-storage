@@ -3,6 +3,7 @@ package passwordService
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	passwordsModel "github.com/anshal1/passwordStorage/src/models/passwords"
 	"github.com/anshal1/passwordStorage/utils"
@@ -11,6 +12,7 @@ import (
 type PasswordServiceContract interface {
 	SavePassword(password passwordsModel.Password, jwtToken string) error
 	GetPassword(domain string, jwtToken string, secret string) (string, error)
+	GetAllPasswords(page int, limit int, jwtToken string) ([]passwordsModel.AllPasswordsResponse, error)
 }
 
 type PasswordService struct {
@@ -83,4 +85,32 @@ func (p *PasswordService) GetPasswordHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	utils.WriteJSON(w, 200, map[string]any{"message": "password retrieved successfully", "password": plainPassword})
+}
+
+func (p *PasswordService) GetAllPasswordsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		utils.WriteError(w, &utils.APIError{Message: "method not allowed", Code: 405})
+		return
+	}
+	cookie, err := r.Cookie("access_token")
+	if err != nil {
+		utils.WriteError(w, &utils.APIError{Message: utils.UserNotFound, Code: 404})
+		return
+	}
+	page := r.URL.Query().Get("page")
+	pageInt, err := strconv.Atoi(page)
+	if err != nil {
+		utils.WriteError(w, &utils.APIError{Message: "page number not provided or invalid", Code: 400})
+		return
+	}
+	if pageInt == 0 {
+		pageInt = 1
+	}
+	limit := 10
+	passwords, err := p.passwordRepo.GetAllPasswords(pageInt, limit, cookie.Value)
+	if err != nil {
+		utils.WriteError(w, &utils.APIError{Message: err.Error(), Code: 500})
+		return
+	}
+	utils.WriteJSON(w, 200, passwords)
 }

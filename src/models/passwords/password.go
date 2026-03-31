@@ -22,3 +22,9 @@ type Password struct {
 	UserId   string `json:"userId"`
 	Secret   string `json:"secret"`
 }
+
+type AllPasswordsResponse struct {
+	Password string `json:"password"`
+	Domain   string `json:"domain"`
+	Id       int64  `json:"id"`
+}

@@ -68,3 +68,29 @@ func (p *PasswordRepo) GetPassword(domain string, jwtToken string, secret string
 	}
 	return password, nil
 }
+
+func (p *PasswordRepo) GetAllPasswords(page int, limit int, jwtToken string) ([]passwordsModel.AllPasswordsResponse, error) {
+	var passwords []passwordsModel.AllPasswordsResponse
+	user, err := userRepo.GetCurrentUser(p.DB, jwtToken)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := p.DB.Query("select domain, id, password from passwords where userId = $1 limit $2 offset $3", user.Id, limit, (page-1)*limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var domain, password string
+		var id int64
+		if err := rows.Scan(&domain, &id, &password); err != nil {
+			return nil, err
+		}
+		passwords = append(passwords, passwordsModel.AllPasswordsResponse{
+			Domain:   domain,
+			Id:       id,
+			Password: password,
+		})
+	}
+	return passwords, nil
+}
