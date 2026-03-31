@@ -1,2 +1,4 @@
 .env
 tmp
+myserver
+migrations.tar.gz
