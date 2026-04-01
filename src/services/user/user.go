@@ -57,6 +57,7 @@ func (u *UserService) UserHandler(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusCreated, map[string]string{
 		"message":  "user created successfully",
 		"username": user.Username,
+		"access_token": jwtToken,
 	})
 }
 
@@ -90,5 +91,6 @@ func (u *UserService) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	utils.SetAuthCookie(w, jwt)
 	utils.WriteJSON(w, 200, map[string]any{
 		"message": "Login successfull",
+		"access_token": jwt,
 	})
 }
