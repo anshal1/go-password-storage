@@ -113,3 +113,16 @@ func (p *PasswordRepo) DeletePassword(id int64, jwtToken string) error {
 	fmt.Println(err)
 	return err
 }
+
+func (p *PasswordRepo) PasswordExists(domain string, jwtToken string) (bool, error) {
+	user, err := userRepo.GetCurrentUser(p.DB, jwtToken)
+	if err != nil {
+		return false, err
+	}
+	var exists bool
+	err = p.DB.QueryRow("select exists(select 1 from passwords where userId = $1 and domain = $2)", user.Id, domain).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}

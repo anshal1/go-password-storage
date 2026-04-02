@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"fmt"
+
 	passwordsModel "github.com/anshal1/passwordStorage/src/models/passwords"
 	"github.com/anshal1/passwordStorage/utils"
-	"fmt"
 )
 
 type PasswordServiceContract interface {
@@ -15,6 +16,7 @@ type PasswordServiceContract interface {
 	GetPassword(domain string, jwtToken string, secret string) (string, error)
 	GetAllPasswords(page int, limit int, jwtToken string) ([]passwordsModel.AllPasswordsResponse, error)
 	DeletePassword(id int64, jwtToken string) error
+	PasswordExists(domain string, jwtToken string) (bool, error)
 }
 
 type PasswordService struct {
@@ -141,4 +143,27 @@ func (p *PasswordService) DeletePasswordHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 	utils.WriteJSON(w, 200, map[string]any{"message": "password deleted successfully"})
+}
+
+func (p *PasswordService) PasswordExistsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		utils.WriteError(w, &utils.APIError{Message: "method not allowed", Code: 405})
+		return
+	}
+	token, tokenErr := utils.GetTokenFromHeader(r)
+	if tokenErr != nil {
+		utils.WriteError(w, tokenErr)
+		return
+	}
+	domain := r.URL.Query().Get("domain")
+	if domain == "" {
+		utils.WriteError(w, &utils.APIError{Message: "domain not provided", Code: 400})
+		return
+	}
+	exists, err := p.passwordRepo.PasswordExists(domain, token)
+	if err != nil {
+		utils.WriteError(w, &utils.APIError{Message: err.Error(), Code: 500})
+		return
+	}
+	utils.WriteJSON(w, 200, map[string]any{"exists": exists})
 }
