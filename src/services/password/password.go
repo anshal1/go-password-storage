@@ -42,12 +42,12 @@ func (p *PasswordService) SavePasswordHandler(w http.ResponseWriter, r *http.Req
 		utils.WriteError(w, passwordsModel.ErrMissingPasswordFields)
 		return
 	}
-	cookie, err := r.Cookie("access_token")
-	if err != nil {
-		utils.WriteError(w, &utils.APIError{Message: utils.UserNotFound, Code: 404})
+	token, tokenErr := utils.GetTokenFromHeader(r)
+	if tokenErr != nil {
+		utils.WriteError(w, tokenErr)
 		return
 	}
-	err = p.passwordRepo.SavePassword(password, cookie.Value)
+	err := p.passwordRepo.SavePassword(password, token)
 	if err != nil {
 
 		utils.WriteError(w, &utils.APIError{Message: err.Error(), Code: 500})
@@ -75,12 +75,12 @@ func (p *PasswordService) GetPasswordHandler(w http.ResponseWriter, r *http.Requ
 		utils.WriteError(w, passwordsModel.ErrMissingPasswordFields)
 		return
 	}
-	cookie, err := r.Cookie("access_token")
-	if err != nil {
-		utils.WriteError(w, &utils.APIError{Message: utils.UserNotFound, Code: 404})
+	token, tokenErr := utils.GetTokenFromHeader(r)
+	if tokenErr != nil {
+		utils.WriteError(w, tokenErr)
 		return
 	}
-	plainPassword, err := p.passwordRepo.GetPassword(password.Domain, cookie.Value, password.Secret)
+	plainPassword, err := p.passwordRepo.GetPassword(password.Domain, token, password.Secret)
 	if err != nil {
 		utils.WriteError(w, &utils.APIError{Message: err.Error(), Code: 500})
 		return
@@ -93,9 +93,9 @@ func (p *PasswordService) GetAllPasswordsHandler(w http.ResponseWriter, r *http.
 		utils.WriteError(w, &utils.APIError{Message: "method not allowed", Code: 405})
 		return
 	}
-	cookie, err := r.Cookie("access_token")
-	if err != nil {
-		utils.WriteError(w, &utils.APIError{Message: utils.UserNotFound, Code: 404})
+	token, tokenErr := utils.GetTokenFromHeader(r)
+	if tokenErr != nil {
+		utils.WriteError(w, tokenErr)
 		return
 	}
 	page := r.URL.Query().Get("page")
@@ -108,7 +108,7 @@ func (p *PasswordService) GetAllPasswordsHandler(w http.ResponseWriter, r *http.
 		pageInt = 1
 	}
 	limit := 10
-	passwords, err := p.passwordRepo.GetAllPasswords(pageInt, limit, cookie.Value)
+	passwords, err := p.passwordRepo.GetAllPasswords(pageInt, limit, token)
 	if err != nil {
 		utils.WriteError(w, &utils.APIError{Message: err.Error(), Code: 500})
 		return

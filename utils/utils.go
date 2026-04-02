@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -198,4 +199,15 @@ func Log(fn http.HandlerFunc) http.HandlerFunc {
 		PrintColoredLog("[ERROR] "+logText, Red)
 
 	}
+}
+
+func GetTokenFromHeader(r *http.Request) (string, *APIError) {
+	headerValue := r.Header.Get("Authorization")
+	if headerValue == "" {
+		return "", &APIError{Message: "Authorization header missing", Code: 401}
+	}
+	if !strings.HasPrefix(headerValue, "Bearer") {
+		return "", &APIError{Message: "Invalid authorization header", Code: 401}
+	}
+	return strings.Replace(headerValue, "Bearer", "", 0), nil
 }
