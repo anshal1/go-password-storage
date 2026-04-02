@@ -7,6 +7,7 @@ import (
 
 	passwordsModel "github.com/anshal1/passwordStorage/src/models/passwords"
 	"github.com/anshal1/passwordStorage/utils"
+	"fmt"
 )
 
 type PasswordServiceContract interface {
@@ -47,6 +48,8 @@ func (p *PasswordService) SavePasswordHandler(w http.ResponseWriter, r *http.Req
 		utils.WriteError(w, tokenErr)
 		return
 	}
+	fmt.Println(token)
+
 	err := p.passwordRepo.SavePassword(password, token)
 	if err != nil {
 
@@ -80,6 +83,7 @@ func (p *PasswordService) GetPasswordHandler(w http.ResponseWriter, r *http.Requ
 		utils.WriteError(w, tokenErr)
 		return
 	}
+
 	plainPassword, err := p.passwordRepo.GetPassword(password.Domain, token, password.Secret)
 	if err != nil {
 		utils.WriteError(w, &utils.APIError{Message: err.Error(), Code: 500})

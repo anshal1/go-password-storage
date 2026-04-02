@@ -209,5 +209,5 @@ func GetTokenFromHeader(r *http.Request) (string, *APIError) {
 	if !strings.HasPrefix(headerValue, "Bearer") {
 		return "", &APIError{Message: "Invalid authorization header", Code: 401}
 	}
-	return strings.Replace(headerValue, "Bearer", "", 0), nil
+	return strings.Replace(headerValue, "Bearer ", "", 1), nil
 }
